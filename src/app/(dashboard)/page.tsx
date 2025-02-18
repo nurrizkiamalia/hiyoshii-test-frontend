@@ -15,10 +15,6 @@ export default function Home() {
       </div>
       <hr />
       <div>
-        <SummaryHeader />
-      </div>
-      <hr />
-      <div>
         <Charts />
       </div>
     </div>

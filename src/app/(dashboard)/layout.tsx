@@ -12,7 +12,7 @@ export default function RootLayout({
             <main className="w-full">
                 <div className="flex items-center w-full p-3 gap-3 text-dspPrimary">
                     <SidebarTrigger />
-                    <h1>Hiyoshii Farm</h1>
+                    <h1>Hyoshii Farm</h1>
                 </div>
                 <hr />
                 {children}

@@ -30,7 +30,7 @@ const SidebarNav: React.FC = () => {
       <SidebarContent>
         <SidebarGroup className="gap-3 text-dspPrimary">
           <SidebarGroupLabel className="text-xl font-medium text-dspPrimary text-center">
-            Hiyoshii Test
+            Hyoshii Test
           </SidebarGroupLabel>
           <hr />
           <SidebarGroupContent>

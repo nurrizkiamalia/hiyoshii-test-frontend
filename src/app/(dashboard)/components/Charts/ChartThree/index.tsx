@@ -1,8 +1,8 @@
-"use client"
+"use client";
 
-import { TrendingUp } from "lucide-react"
-import { Label, Pie, PieChart, Sector } from "recharts"
-import { PieSectorDataItem } from "recharts/types/polar/Pie"
+import { useEffect, useState } from "react";
+import { TrendingUp } from "lucide-react";
+import { LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from "recharts";
 
 import {
   Card,
@@ -11,91 +11,96 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card"
+} from "@/components/ui/card";
 import {
   ChartConfig,
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
-} from "@/components/ui/chart"
-const chartData = [
-  { browser: "chrome", visitors: 275, fill: "var(--color-chrome)" },
-  { browser: "safari", visitors: 200, fill: "var(--color-safari)" },
-  { browser: "firefox", visitors: 187, fill: "var(--color-firefox)" },
-  { browser: "edge", visitors: 173, fill: "var(--color-edge)" },
-  { browser: "other", visitors: 90, fill: "var(--color-other)" },
-]
+} from "@/components/ui/chart";
+import { usePackingReports } from "@/hooks/usePacking";
 
-const chartConfig = {
-  visitors: {
-    label: "Visitors",
-  },
-  chrome: {
-    label: "Chrome",
-    color: "hsl(var(--chart-1))",
-  },
-  safari: {
-    label: "Safari",
-    color: "hsl(var(--chart-2))",
-  },
-  firefox: {
-    label: "Firefox",
-    color: "hsl(var(--chart-3))",
-  },
-  edge: {
-    label: "Edge",
-    color: "hsl(var(--chart-4))",
-  },
-  other: {
-    label: "Other",
-    color: "hsl(var(--chart-5))",
-  },
-} satisfies ChartConfig
+// Define colors for different PICs
+const CHART_COLORS = ["#FF5733", "#33FF57", "#3357FF", "#FFC300", "#C70039"];
+
+interface ChartData {
+  time: string;
+  [pic: string]: number | string;
+}
 
 const ChartThree: React.FC = () => {
+  const { reportData, loading, error } = usePackingReports();
+  const [chartData, setChartData] = useState<ChartData[]>([]);
+  const [picList, setPicList] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (reportData.productivityByPIC.length > 0) {
+      // Extract unique PICs
+      const uniquePics = Array.from(new Set(reportData.productivityByPIC.map((entry: any) => entry.pic)));
+
+      // Format data
+      const formattedData: ChartData[] = reportData.productivityByPIC.reduce((acc: ChartData[], entry: any) => {
+        const existing = acc.find((item) => item.time === entry.timePeriod);
+        if (existing) {
+          existing[entry.pic] = Number(entry.productivityPerHour) || 0;
+        } else {
+          acc.push({
+            time: entry.timePeriod,
+            [entry.pic]: Number(entry.productivityPerHour) || 0,
+          });
+        }
+        return acc;
+      }, []);
+
+      setPicList(uniquePics);
+      setChartData(formattedData);
+    }
+  }, [reportData]);
+
+  // ✅ FIX: Define `config` properly
+  const chartConfig: ChartConfig = picList.reduce(
+    (acc, pic, index) => ({
+      ...acc,
+      [pic]: { label: pic, color: CHART_COLORS[index % CHART_COLORS.length] },
+    }),
+    {}
+  );
+
   return (
-    <Card className="flex flex-col">
-      <CardHeader className="items-center pb-0">
-        <CardTitle>Pie Chart - Donut Active</CardTitle>
-        <CardDescription>January - June 2024</CardDescription>
+    <Card>
+      <CardHeader>
+        <CardTitle>Productivity Per PIC (Multiple Line)</CardTitle>
+        <CardDescription>Hourly Productivity by PIC</CardDescription>
       </CardHeader>
-      <CardContent className="flex-1 pb-0">
-        <ChartContainer
-          config={chartConfig}
-          className="mx-auto aspect-square max-h-[250px]"
-        >
-          <PieChart>
-            <ChartTooltip
-              cursor={false}
-              content={<ChartTooltipContent hideLabel />}
-            />
-            <Pie
-              data={chartData}
-              dataKey="visitors"
-              nameKey="browser"
-              innerRadius={60}
-              strokeWidth={5}
-              activeIndex={0}
-              activeShape={({
-                outerRadius = 0,
-                ...props
-              }: PieSectorDataItem) => (
-                <Sector {...props} outerRadius={outerRadius + 10} />
-              )}
-            />
-          </PieChart>
-        </ChartContainer>
+      <CardContent>
+        {loading ? (
+          <p>Loading...</p>
+        ) : error ? (
+          <p>Error: {error}</p>
+        ) : (
+          <ChartContainer config={chartConfig}>
+            <ResponsiveContainer width="100%" height={400}>
+              <LineChart data={chartData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="time" />
+                <YAxis />
+                <Tooltip content={<ChartTooltipContent />} />
+                <Legend />
+                {picList.map((pic, index) => (
+                  <Line key={pic} type="monotone" dataKey={pic} stroke={CHART_COLORS[index % CHART_COLORS.length]} strokeWidth={2} />
+                ))}
+              </LineChart>
+            </ResponsiveContainer>
+          </ChartContainer>
+        )}
       </CardContent>
-      <CardFooter className="flex-col gap-2 text-sm">
-        <div className="flex items-center gap-2 font-medium leading-none">
-          Trending up by 5.2% this month <TrendingUp className="h-4 w-4" />
-        </div>
-        <div className="leading-none text-muted-foreground">
-          Showing total visitors for the last 6 months
+      <CardFooter>
+        <div className="text-muted-foreground">
+          Showing hourly productivity per PIC.
         </div>
       </CardFooter>
     </Card>
-  )
-}
+  );
+};
 
 export default ChartThree;
